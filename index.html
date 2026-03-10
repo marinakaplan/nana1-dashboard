@@ -1,0 +1,2849 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NANA-1 | Autonomous Greenhouse Control System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2332;
+            --bg-card-hover: #1f2b3d;
+            --border: #2a3a50;
+            --border-active: #3b82f6;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --neon-blue: #00d4ff;
+            --neon-glow: 0 0 20px rgba(0, 212, 255, 0.3);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
+
+        /* ===== TOP NAV ===== */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: var(--neon-glow);
+            position: relative;
+        }
+
+        .nav-logo::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            animation: pulse-ring 2s ease-out infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+
+        .nav-logo svg { width: 20px; height: 20px; fill: white; }
+
+        .nav-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 2px;
+        }
+
+        .nav-title span { color: var(--neon-blue); }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .status-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .nav-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .nav-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-btn svg { width: 18px; height: 18px; }
+
+        .nav-btn.active {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        /* Dropdown panels */
+        .nav-dropdown {
+            position: absolute;
+            top: 56px;
+            right: 0;
+            width: 300px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.25s ease;
+        }
+
+        .nav-dropdown.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-dropdown-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-dropdown-body {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .notif-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            transition: background 0.2s ease;
+        }
+
+        .notif-item:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .notif-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .notif-content {
+            flex: 1;
+        }
+
+        .notif-text {
+            font-size: 12px;
+            color: var(--text-primary);
+            line-height: 1.4;
+            margin-bottom: 3px;
+        }
+
+        .notif-time {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .settings-row {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .settings-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .toggle {
+            width: 36px;
+            height: 20px;
+            border-radius: 10px;
+            background: var(--border);
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .toggle.on {
+            background: var(--accent-green);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            transition: transform 0.2s ease;
+        }
+
+        .toggle.on::after {
+            transform: translateX(16px);
+        }
+
+        /* ===== MAIN LAYOUT ===== */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 0;
+            margin-top: 56px;
+            height: calc(100vh - 56px);
+        }
+
+        /* ===== LEFT PANEL ===== */
+        .panel-left {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-label::before {
+            content: '';
+            width: 3px;
+            height: 12px;
+            background: var(--accent-blue);
+            border-radius: 2px;
+        }
+
+        /* Robot Visualization */
+        .robot-viz {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .robot-viz::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan), var(--accent-blue));
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .robot-svg-container {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .robot-state-label {
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--neon-blue);
+            margin-top: 12px;
+            padding: 6px 12px;
+            background: rgba(0, 212, 255, 0.08);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+        }
+
+        /* State Selector */
+        .state-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .state-btn {
+            padding: 10px 8px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .state-btn:hover {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .state-btn.active {
+            border-color: var(--accent-cyan);
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--neon-blue);
+            box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.05);
+        }
+
+        /* Mode Cards */
+        .mode-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .mode-card:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-card-hover);
+        }
+
+        .mode-card.active {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        .mode-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .mode-info { flex: 1; min-width: 0; }
+
+        .mode-name {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .mode-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .mode-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Battery & Systems */
+        .system-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-bar {
+            width: 100%;
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1s ease;
+        }
+
+        /* ===== CENTER PANEL ===== */
+        .panel-center {
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* Viewport */
+        .viewport-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .viewport-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .viewport-tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .viewport-tab {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-muted);
+            background: transparent;
+            border: none;
+        }
+
+        .viewport-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+        .viewport-tab.active {
+            color: var(--neon-blue);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .viewport-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .viewport-body {
+            height: 380px;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Grid overlay */
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .viewport-robot {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* HUD Overlay */
+        .hud-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            pointer-events: none;
+            padding: 16px;
+        }
+
+        .hud-corner {
+            position: absolute;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--neon-blue);
+            opacity: 0.7;
+        }
+
+        .hud-tl { top: 16px; left: 16px; text-align: left; }
+        .hud-tr { top: 16px; right: 16px; text-align: right; }
+        .hud-bl { bottom: 16px; left: 16px; text-align: left; }
+        .hud-br { bottom: 16px; right: 16px; text-align: right; }
+
+        .hud-line {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .hud-highlight { color: var(--accent-green); }
+        .hud-warning { color: var(--accent-orange); }
+
+        .viewport-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Task Queue */
+        .task-queue {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .task-queue-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .task-queue-title {
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .task-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(42, 58, 80, 0.5);
+            transition: var(--transition);
+        }
+
+        .task-item:hover { background: rgba(255,255,255,0.02); }
+        .task-item:last-child { border-bottom: none; }
+
+        .task-priority {
+            width: 4px;
+            height: 32px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .task-priority.high { background: var(--accent-red); }
+        .task-priority.medium { background: var(--accent-orange); }
+        .task-priority.low { background: var(--accent-green); }
+
+        .task-content { flex: 1; min-width: 0; }
+
+        .task-name {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .task-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            gap: 12px;
+        }
+
+        .task-progress-bar {
+            width: 80px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .task-progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--accent-blue);
+            transition: width 0.5s ease;
+        }
+
+        .task-status-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .badge-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+        }
+
+        .badge-queued {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .badge-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-orange);
+        }
+
+        /* Map Overview */
+        .map-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .map-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .map-body {
+            height: 200px;
+            position: relative;
+            background: linear-gradient(180deg, rgba(0,212,255,0.02), transparent);
+        }
+
+        /* Activity Log */
+        .activity-log {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .log-entry {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(42, 58, 80, 0.3);
+            font-size: 12px;
+        }
+
+        .log-time {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            flex-shrink: 0;
+            font-size: 11px;
+        }
+
+        .log-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .log-text { color: var(--text-secondary); }
+        .log-text strong { color: var(--text-primary); font-weight: 600; }
+
+        /* ===== RIGHT PANEL ===== */
+        .panel-right {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* Environment Widget */
+        .env-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .env-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .env-card-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .env-card-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .env-card-unit {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .env-card-change {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .env-sparkline {
+            width: 100%;
+            height: 40px;
+            margin-top: 12px;
+        }
+
+        /* Docking Ramp Widget */
+        .dock-widget {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .dock-visual {
+            width: 100%;
+            height: 100px;
+            margin: 12px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dock-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .dock-stat {
+            text-align: center;
+            padding: 8px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: var(--radius-sm);
+        }
+
+        .dock-stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--neon-blue);
+        }
+
+        .dock-stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Alerts Widget */
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+        }
+
+        .alert-item.info {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .alert-item.success {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .alert-item.warning {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .alert-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .alert-content { flex: 1; }
+
+        .alert-title {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .alert-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .quick-btn {
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .quick-btn:hover {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.08);
+            color: var(--text-primary);
+        }
+
+        .quick-btn .icon { font-size: 20px; }
+
+        .quick-btn.danger:hover {
+            border-color: var(--accent-red);
+            background: rgba(239, 68, 68, 0.08);
+            color: var(--accent-red);
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes scan-line {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .scan-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.4), transparent);
+            animation: scan-line 4s linear infinite;
+            z-index: 5;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .panel-left, .panel-right {
+                display: none;
+            }
+        }
+
+        /* Robot SVG Styles */
+        .robot-body { transition: var(--transition); }
+        .robot-eye-glow { animation: blink 3s ease-in-out infinite; }
+        .robot-arm { transition: transform 0.5s ease; transform-origin: center; }
+
+        /* Greenhouse Map SVG */
+        .map-robot-dot {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .map-path {
+            stroke-dasharray: 8 4;
+            animation: dash 20s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -200; }
+        }
+
+        /* Charts */
+        .mini-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 40px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: var(--accent-blue);
+            border-radius: 2px 2px 0 0;
+            opacity: 0.6;
+            transition: var(--transition);
+        }
+
+        .chart-bar:hover { opacity: 1; }
+
+        /* ===== ENHANCED TASK QUEUE ===== */
+        .tq-stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tq-stat {
+            background: var(--bg-card);
+            padding: 12px 14px;
+            text-align: center;
+        }
+
+        .tq-stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .tq-stat-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        .tq-progress-overview {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tq-progress-track {
+            flex: 1;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .tq-progress-segment {
+            height: 100%;
+            transition: width 1s ease;
+        }
+
+        .tq-progress-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .tq-filters {
+            display: flex;
+            gap: 6px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tq-filter-btn {
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .tq-filter-btn:hover { border-color: var(--accent-blue); color: var(--text-secondary); }
+        .tq-filter-btn.active { border-color: var(--accent-cyan); color: var(--neon-blue); background: rgba(0,212,255,0.08); }
+
+        /* Enhanced task item */
+        .tq-item {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            padding: 0;
+            border-bottom: 1px solid rgba(42, 58, 80, 0.4);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tq-item:hover { background: rgba(255,255,255,0.015); }
+        .tq-item:last-child { border-bottom: none; }
+
+        .tq-item-accent {
+            width: 4px;
+            flex-shrink: 0;
+        }
+
+        .tq-item-body {
+            flex: 1;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .tq-item-row1 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .tq-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .tq-item-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .tq-item-info { min-width: 0; flex: 1; }
+
+        .tq-item-name {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tq-item-detail {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 2px;
+        }
+
+        .tq-item-detail span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tq-item-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .tq-item-pct {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            min-width: 38px;
+            text-align: right;
+        }
+
+        .tq-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .tq-badge-active { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+        .tq-badge-queued { background: rgba(59,130,246,0.12); color: var(--accent-blue); }
+        .tq-badge-pending { background: rgba(100,116,139,0.12); color: var(--text-muted); }
+
+        /* Sub-progress bar inside task */
+        .tq-item-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tq-item-track {
+            flex: 1;
+            height: 4px;
+            background: rgba(42,58,80,0.6);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .tq-item-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+
+        .tq-item-eta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* Sub-steps */
+        .tq-substeps {
+            display: flex;
+            gap: 3px;
+        }
+
+        .tq-substep {
+            flex: 1;
+            height: 3px;
+            border-radius: 1.5px;
+            background: rgba(42,58,80,0.6);
+        }
+
+        .tq-substep.done { background: var(--accent-green); }
+        .tq-substep.current { background: var(--accent-cyan); animation: blink 1.5s ease-in-out infinite; }
+
+        /* Action buttons row */
+        .tq-item-actions {
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .tq-item:hover .tq-item-actions { opacity: 1; }
+
+        .tq-action-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--bg-primary);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: var(--transition);
+        }
+
+        .tq-action-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+
+        /* Active task glow */
+        .tq-item.tq-active {
+            background: rgba(16,185,129,0.03);
+        }
+
+        .tq-item.tq-active .tq-item-accent {
+            box-shadow: 2px 0 12px rgba(16,185,129,0.3);
+        }
+
+        /* Circular mini-progress */
+        .tq-ring {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .tq-ring svg { transform: rotate(-90deg); }
+
+        .tq-ring-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        /* Emergency Button */
+        .emergency-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: var(--radius);
+            border: 2px solid var(--accent-red);
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .emergency-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+
+        /* Progress Ring */
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        /* Automation Schedule */
+        .schedule-timeline {
+            display: flex;
+            gap: 2px;
+            margin-top: 12px;
+        }
+
+        .schedule-block {
+            flex: 1;
+            height: 24px;
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .schedule-block:hover {
+            transform: scaleY(1.3);
+            z-index: 1;
+        }
+
+        .schedule-block.active { background: rgba(16, 185, 129, 0.4); }
+        .schedule-block.idle { background: rgba(100, 116, 139, 0.2); }
+        .schedule-block.pollinate { background: rgba(139, 92, 246, 0.4); }
+        .schedule-block.scan { background: rgba(6, 182, 212, 0.4); }
+        .schedule-block.charge { background: rgba(245, 158, 11, 0.4); }
+
+        .schedule-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+    <div class="nav-brand">
+        <div class="nav-logo">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" fill="none" stroke="white" stroke-width="2"/><circle cx="12" cy="8" r="2" fill="white"/><line x1="12" y1="13" x2="12" y2="18" stroke="white" stroke-width="2"/><line x1="7" y1="15" x2="12" y2="13" stroke="white" stroke-width="1.5"/><line x1="17" y1="15" x2="12" y2="13" stroke="white" stroke-width="1.5"/><circle cx="8" cy="21" r="2" fill="none" stroke="white" stroke-width="1.5"/><circle cx="16" cy="21" r="2" fill="none" stroke="white" stroke-width="1.5"/></svg>
+        </div>
+        <div class="nav-title">NANA<span>-1</span></div>
+    </div>
+
+    <div class="nav-status">
+        <div class="status-chip">
+            <div class="status-dot"></div>
+            AUTONOMOUS
+        </div>
+        <div class="nav-time" id="navTime">--:--:--</div>
+        <div style="font-size:11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+            UPTIME <span style="color: var(--accent-green);" id="uptime">12h 43m</span>
+        </div>
+    </div>
+
+    <div class="nav-actions">
+        <a href="about.html" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:8px 18px;border-radius:8px;border:1px solid var(--neon-blue);background:rgba(0,212,255,0.08);color:var(--neon-blue);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:1.5px;transition:all 0.3s ease;cursor:pointer;" onmouseover="this.style.background='rgba(0,212,255,0.18)';this.style.boxShadow='0 0 20px rgba(0,212,255,0.2)'" onmouseout="this.style.background='rgba(0,212,255,0.08)';this.style.boxShadow='none'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            ABOUT & SPECS
+        </a>
+        <button class="nav-btn" id="btnSettings" title="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+        <button class="nav-btn" id="btnNotifications" title="Notifications" style="position:relative;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <span id="notifBadge" style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:#ef4444;border-radius:50%;border:2px solid var(--bg-card);"></span>
+        </button>
+        <button class="nav-btn" id="btnFullScreen" title="Full Screen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+    </div>
+
+    <!-- Notifications Dropdown -->
+    <div class="nav-dropdown" id="notifDropdown">
+        <div class="nav-dropdown-header">
+            Notifications
+            <span style="font-size:10px;color:var(--accent-green);cursor:pointer;" id="markAllRead">Mark all read</span>
+        </div>
+        <div class="nav-dropdown-body">
+            <div class="notif-item">
+                <div class="notif-dot" style="background:#10b981;"></div>
+                <div class="notif-content">
+                    <div class="notif-text">Harvest zone A completed. 847 fruits collected.</div>
+                    <div class="notif-time">2 min ago</div>
+                </div>
+            </div>
+            <div class="notif-item">
+                <div class="notif-dot" style="background:#f59e0b;"></div>
+                <div class="notif-content">
+                    <div class="notif-text">Humidity sensor in Zone C reporting +3% above threshold.</div>
+                    <div class="notif-time">18 min ago</div>
+                </div>
+            </div>
+            <div class="notif-item">
+                <div class="notif-dot" style="background:#3b82f6;"></div>
+                <div class="notif-content">
+                    <div class="notif-text">Scheduled maintenance: gripper calibration in 2 hours.</div>
+                    <div class="notif-time">45 min ago</div>
+                </div>
+            </div>
+            <div class="notif-item">
+                <div class="notif-dot" style="background:#ef4444;"></div>
+                <div class="notif-content">
+                    <div class="notif-text">Pathogen alert: leaf blight detected in Row 14, Section B.</div>
+                    <div class="notif-time">1 hr ago</div>
+                </div>
+            </div>
+            <div class="notif-item">
+                <div class="notif-dot" style="background:#10b981;"></div>
+                <div class="notif-content">
+                    <div class="notif-text">Battery swap complete. Charge at 100%.</div>
+                    <div class="notif-time">1.5 hr ago</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Dropdown -->
+    <div class="nav-dropdown" id="settingsDropdown" style="width:260px;">
+        <div class="nav-dropdown-header">Settings</div>
+        <div class="nav-dropdown-body">
+            <div class="settings-row">
+                <span class="settings-label">Live Telemetry</span>
+                <div class="toggle on" data-setting="telemetry"></div>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Audio Alerts</span>
+                <div class="toggle" data-setting="audio"></div>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Auto-Refresh (30s)</span>
+                <div class="toggle on" data-setting="refresh"></div>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Dark Overlay HUD</span>
+                <div class="toggle on" data-setting="hud"></div>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Camera Motion</span>
+                <div class="toggle on" data-setting="camera"></div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN LAYOUT -->
+<div class="main-layout">
+
+    <!-- ===== LEFT PANEL ===== -->
+    <div class="panel-left">
+
+        <div class="section-label">Greenhouse Environment</div>
+
+        <!-- Temperature -->
+        <div class="env-card">
+            <div class="env-card-header">
+                <div class="env-card-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2" style="vertical-align:middle;"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> Temperature
+                </div>
+                <span style="font-size:11px; color: var(--accent-green);">&#9679; Normal</span>
+            </div>
+            <div class="env-card-value" style="color: var(--accent-orange);">
+                24.7<span class="env-card-unit">°C</span>
+            </div>
+            <div class="env-card-change" style="color: var(--accent-green);">+0.3°C from last hour</div>
+            <div class="mini-chart" id="tempChart"></div>
+        </div>
+
+        <!-- Humidity -->
+        <div class="env-card">
+            <div class="env-card-header">
+                <div class="env-card-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2" style="vertical-align:middle;"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Humidity
+                </div>
+                <span style="font-size:11px; color: var(--accent-green);">&#9679; Normal</span>
+            </div>
+            <div class="env-card-value" style="color: var(--accent-cyan);">
+                68<span class="env-card-unit">%</span>
+            </div>
+            <div class="env-card-change" style="color: var(--accent-blue);">-2% from last hour</div>
+            <div class="mini-chart" id="humidChart"></div>
+        </div>
+
+        <!-- Light -->
+        <div class="env-card">
+            <div class="env-card-header">
+                <div class="env-card-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2" style="vertical-align:middle;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Light Intensity
+                </div>
+                <span style="font-size:11px; color: var(--accent-green);">&#9679; Normal</span>
+            </div>
+            <div class="env-card-value" style="color: var(--accent-orange);">
+                12.4K<span class="env-card-unit"> lux</span>
+            </div>
+            <div class="mini-chart" id="lightChart"></div>
+        </div>
+
+        <!-- CO2 -->
+        <div class="env-card">
+            <div class="env-card-header">
+                <div class="env-card-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2" style="vertical-align:middle;"><path d="M8 2h8l4 10H4L8 2z"/><path d="M2 12h20"/><path d="M7 12v4a5 5 0 0 0 10 0v-4"/></svg> CO₂
+                </div>
+                <span style="font-size:11px; color: var(--accent-green);">&#9679; Normal</span>
+            </div>
+            <div class="env-card-value" style="color: var(--accent-green);">
+                820<span class="env-card-unit"> ppm</span>
+            </div>
+        </div>
+
+        <div class="section-label" style="margin-top:20px;">Docking System</div>
+
+        <!-- Docking Ramp -->
+        <div class="dock-widget">
+            <div class="env-card-header">
+                <div class="env-card-title">Magnetic Docking Ramp</div>
+                <span style="font-size:11px; color: var(--neon-blue);">&#9679; Synced</span>
+            </div>
+            <div class="dock-visual">
+                <svg width="240" height="90" viewBox="0 0 240 90">
+                    <!-- Ramp body -->
+                    <defs>
+                        <linearGradient id="rampGrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="rgba(0,212,255,0.2)"/>
+                            <stop offset="100%" stop-color="rgba(0,212,255,0.05)"/>
+                        </linearGradient>
+                        <filter id="neonGlow">
+                            <feGaussianBlur stdDeviation="2" result="blur"/>
+                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                    </defs>
+                    <!-- Ramp surface -->
+                    <polygon points="20,80 220,80 200,20 60,20" fill="url(#rampGrad)" stroke="var(--neon-blue)" stroke-width="1.5" filter="url(#neonGlow)"/>
+                    <!-- Support legs -->
+                    <line x1="195" y1="22" x2="215" y2="80" stroke="var(--border)" stroke-width="2"/>
+                    <line x1="65" y1="22" x2="25" y2="80" stroke="var(--border)" stroke-width="2"/>
+                    <!-- Magnetic strips -->
+                    <line x1="80" y1="35" x2="100" y2="70" stroke="var(--neon-blue)" stroke-width="1" opacity="0.5" stroke-dasharray="4 3"/>
+                    <line x1="110" y1="30" x2="120" y2="72" stroke="var(--neon-blue)" stroke-width="1" opacity="0.5" stroke-dasharray="4 3"/>
+                    <line x1="140" y1="28" x2="145" y2="74" stroke="var(--neon-blue)" stroke-width="1" opacity="0.5" stroke-dasharray="4 3"/>
+                    <line x1="170" y1="25" x2="168" y2="76" stroke="var(--neon-blue)" stroke-width="1" opacity="0.5" stroke-dasharray="4 3"/>
+                    <!-- Wheels -->
+                    <circle cx="25" cy="84" r="4" fill="var(--border)" stroke="var(--text-muted)" stroke-width="1"/>
+                    <circle cx="215" cy="84" r="4" fill="var(--border)" stroke="var(--text-muted)" stroke-width="1"/>
+                    <!-- Status indicator -->
+                    <circle cx="130" cy="50" r="6" fill="rgba(0,212,255,0.3)" stroke="var(--neon-blue)" stroke-width="1">
+                        <animate attributeName="r" values="6;8;6" dur="2s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+                    </circle>
+                </svg>
+            </div>
+            <div class="dock-stats">
+                <div class="dock-stat">
+                    <div class="dock-stat-value">15°</div>
+                    <div class="dock-stat-label">Ramp Angle</div>
+                </div>
+                <div class="dock-stat">
+                    <div class="dock-stat-value">92%</div>
+                    <div class="dock-stat-label">Magnetic Strength</div>
+                </div>
+                <div class="dock-stat">
+                    <div class="dock-stat-value">A3</div>
+                    <div class="dock-stat-label">Current Station</div>
+                </div>
+                <div class="dock-stat">
+                    <div class="dock-stat-value" id="dockSync">OK</div>
+                    <div class="dock-stat-label">Sync Status</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-label" style="margin-top:20px;">Alerts</div>
+
+        <div class="alert-item success">
+            <div class="alert-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div class="alert-content">
+                <div class="alert-title">Pollination Complete - Row 4B</div>
+                <div class="alert-desc">14 plants processed successfully</div>
+            </div>
+        </div>
+
+        <div class="alert-item info">
+            <div class="alert-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+            <div class="alert-content">
+                <div class="alert-title">Plant Health Scan</div>
+                <div class="alert-desc">Scheduled for 14:30</div>
+            </div>
+        </div>
+
+        <div class="alert-item warning">
+            <div class="alert-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <div class="alert-content">
+                <div class="alert-title">Battery Level 34%</div>
+                <div class="alert-desc">Auto-charge will start at 30%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CENTER PANEL ===== -->
+    <div class="panel-center">
+
+        <!-- Viewport -->
+        <div class="viewport-container">
+            <div class="viewport-header">
+                <div class="viewport-tabs">
+                    <button class="viewport-tab active" data-view="camera">Live Camera</button>
+                    <button class="viewport-tab" data-view="thermal">Thermal</button>
+                    <button class="viewport-tab" data-view="map3d">3D Map</button>
+                    <button class="viewport-tab" data-view="depth">Depth</button>
+                </div>
+                <div class="viewport-actions">
+                    <button class="nav-btn" style="width:28px;height:28px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    </button>
+                    <button class="nav-btn" style="width:28px;height:28px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="viewport-body" id="viewport">
+
+                <!-- ========== VIEW: LIVE CAMERA (Robot POV - Remotion) ========== -->
+                <div class="view-layer" id="viewCamera" style="position:absolute;inset:0;overflow:hidden;">
+                    <iframe src="remotion-feed/dist/index.html" style="width:100%;height:100%;border:none;display:block;" allow="autoplay"></iframe>
+                </div>
+
+                <!-- ========== VIEW: THERMAL ========== -->
+                <div class="view-layer" id="viewThermal" style="position:absolute;inset:0;display:none;">
+                    <svg width="100%" height="100%" viewBox="0 0 800 380" preserveAspectRatio="xMidYMid slice">
+                        <defs>
+                            <radialGradient id="heatBot" cx="50%" cy="55%" r="25%">
+                                <stop offset="0%" stop-color="#ff0000"/><stop offset="30%" stop-color="#ff6600"/><stop offset="60%" stop-color="#ffcc00"/><stop offset="100%" stop-color="#003366" stop-opacity="0"/>
+                            </radialGradient>
+                            <radialGradient id="heatMotor" cx="50%" cy="70%" r="18%">
+                                <stop offset="0%" stop-color="#ff3300"/><stop offset="50%" stop-color="#ff8800"/><stop offset="100%" stop-color="#003366" stop-opacity="0"/>
+                            </radialGradient>
+                            <radialGradient id="heatArm1" cx="20%" cy="50%" r="12%">
+                                <stop offset="0%" stop-color="#ffaa00"/><stop offset="100%" stop-color="#003366" stop-opacity="0"/>
+                            </radialGradient>
+                            <radialGradient id="heatArm2" cx="80%" cy="50%" r="12%">
+                                <stop offset="0%" stop-color="#ffaa00"/><stop offset="100%" stop-color="#003366" stop-opacity="0"/>
+                            </radialGradient>
+                            <linearGradient id="thermalBg" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#000033"/><stop offset="100%" stop-color="#001144"/>
+                            </linearGradient>
+                            <!-- Thermal scale -->
+                            <linearGradient id="thermalScale" x1="0" y1="1" x2="0" y2="0">
+                                <stop offset="0%" stop-color="#000066"/><stop offset="25%" stop-color="#0066ff"/><stop offset="50%" stop-color="#00ff00"/><stop offset="75%" stop-color="#ffcc00"/><stop offset="100%" stop-color="#ff0000"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- Background -->
+                        <rect width="800" height="380" fill="url(#thermalBg)"/>
+                        <!-- Ambient cold areas -->
+                        <rect x="0" y="0" width="800" height="60" fill="#000844" opacity="0.6"/>
+                        <rect x="0" y="300" width="800" height="80" fill="#001155" opacity="0.4"/>
+                        <!-- Shelf heat (grow lights) -->
+                        <rect x="50" y="20" width="700" height="35" rx="4" fill="#114400" opacity="0.5"/>
+                        <rect x="80" y="25" width="120" height="25" rx="2" fill="#336600" opacity="0.6"/>
+                        <rect x="250" y="25" width="120" height="25" rx="2" fill="#447700" opacity="0.6"/>
+                        <rect x="420" y="25" width="120" height="25" rx="2" fill="#336600" opacity="0.6"/>
+                        <rect x="590" y="25" width="120" height="25" rx="2" fill="#447700" opacity="0.6"/>
+                        <!-- Ground heat signature -->
+                        <rect x="0" y="310" width="800" height="70" fill="#001133" opacity="0.3"/>
+                        <!-- Robot thermal signature -->
+                        <rect width="800" height="380" fill="url(#heatBot)"/>
+                        <rect width="800" height="380" fill="url(#heatMotor)"/>
+                        <rect width="800" height="380" fill="url(#heatArm1)"/>
+                        <rect width="800" height="380" fill="url(#heatArm2)"/>
+                        <!-- Robot outline (thermal edges) -->
+                        <circle cx="400" cy="140" r="52" fill="none" stroke="#ffcc00" stroke-width="1.5" opacity="0.6"/>
+                        <rect x="365" y="185" width="70" height="55" rx="6" fill="none" stroke="#ff8800" stroke-width="1.5" opacity="0.5"/>
+                        <ellipse cx="370" cy="275" rx="28" ry="22" fill="none" stroke="#ff6600" stroke-width="1" opacity="0.4"/>
+                        <ellipse cx="430" cy="275" rx="28" ry="22" fill="none" stroke="#ff6600" stroke-width="1" opacity="0.4"/>
+                        <!-- Temperature labels -->
+                        <text x="400" y="145" fill="#ffffff" font-size="14" font-family="JetBrains Mono" text-anchor="middle" opacity="0.9">42.3°C</text>
+                        <text x="400" y="220" fill="#ffcc00" font-size="11" font-family="JetBrains Mono" text-anchor="middle" opacity="0.8">38.1°C</text>
+                        <text x="370" y="280" fill="#ff8800" font-size="10" font-family="JetBrains Mono" text-anchor="middle" opacity="0.7">45.7°C</text>
+                        <text x="430" y="280" fill="#ff8800" font-size="10" font-family="JetBrains Mono" text-anchor="middle" opacity="0.7">44.9°C</text>
+                        <text x="260" y="185" fill="#ffaa00" font-size="10" font-family="JetBrains Mono" text-anchor="middle" opacity="0.6">28.4°C</text>
+                        <text x="540" y="185" fill="#ffaa00" font-size="10" font-family="JetBrains Mono" text-anchor="middle" opacity="0.6">27.8°C</text>
+                        <!-- Ambient labels -->
+                        <text x="700" y="350" fill="#4488cc" font-size="10" font-family="JetBrains Mono" opacity="0.5">AMBIENT: 24.7°C</text>
+                        <!-- Thermal scale bar -->
+                        <rect x="755" y="40" width="16" height="200" rx="3" fill="url(#thermalScale)"/>
+                        <text x="763" y="35" fill="#ff3333" font-size="8" font-family="JetBrains Mono" text-anchor="middle">50°C</text>
+                        <text x="763" y="255" fill="#3366ff" font-size="8" font-family="JetBrains Mono" text-anchor="middle">15°C</text>
+                        <!-- Scan pulse -->
+                        <circle cx="400" cy="190" r="80" fill="none" stroke="#ffcc00" stroke-width="0.5" opacity="0.3"><animate attributeName="r" values="80;150;80" dur="4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.3;0;0.3" dur="4s" repeatCount="indefinite"/></circle>
+                    </svg>
+                </div>
+
+                <!-- ========== VIEW: 3D MAP ========== -->
+                <div class="view-layer" id="viewMap3d" style="position:absolute;inset:0;display:none;overflow:hidden;">
+                    <svg width="100%" height="100%" viewBox="0 0 800 380" preserveAspectRatio="xMidYMid slice">
+                        <defs>
+                            <linearGradient id="map3dBg" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#0a0e17"/><stop offset="100%" stop-color="#0d1520"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="800" height="380" fill="url(#map3dBg)"/>
+                        <!-- Perspective grid floor -->
+                        <g opacity="0.25">
+                            <line x1="100" y1="380" x2="350" y2="120" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="200" y1="380" x2="375" y2="120" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="300" y1="380" x2="400" y2="120" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="400" y1="380" x2="425" y2="120" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="500" y1="380" x2="450" y2="120" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="600" y1="380" x2="475" y2="120" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="700" y1="380" x2="500" y2="120" stroke="#00d4ff" stroke-width="0.5"/>
+                            <!-- Horizontal lines -->
+                            <line x1="50" y1="350" x2="750" y2="350" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="100" y1="300" x2="700" y2="300" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="150" y1="250" x2="650" y2="250" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="200" y1="200" x2="600" y2="200" stroke="#00d4ff" stroke-width="0.5"/>
+                            <line x1="250" y1="160" x2="550" y2="160" stroke="#00d4ff" stroke-width="0.5"/>
+                        </g>
+                        <!-- 3D Shelving units wireframe -->
+                        <!-- Shelf Row A -->
+                        <g opacity="0.7">
+                            <polygon points="120,280 320,280 310,240 140,240" fill="none" stroke="#10b981" stroke-width="1.5"/>
+                            <line x1="140" y1="240" x2="140" y2="220" stroke="#10b981" stroke-width="1"/>
+                            <line x1="310" y1="240" x2="310" y2="220" stroke="#10b981" stroke-width="1"/>
+                            <polygon points="140,220 310,220 300,195 155,195" fill="rgba(16,185,129,0.08)" stroke="#10b981" stroke-width="1"/>
+                            <text x="210" y="265" fill="#10b981" font-size="10" font-family="JetBrains Mono" text-anchor="middle">ROW A</text>
+                            <!-- Plants on shelf -->
+                            <circle cx="175" cy="212" r="4" fill="#22c55e" opacity="0.6"/><circle cx="195" cy="210" r="5" fill="#16a34a" opacity="0.7"/><circle cx="215" cy="211" r="4" fill="#22c55e" opacity="0.6"/><circle cx="235" cy="209" r="5" fill="#15803d" opacity="0.7"/><circle cx="255" cy="212" r="4" fill="#22c55e" opacity="0.6"/><circle cx="275" cy="210" r="4" fill="#16a34a" opacity="0.6"/>
+                        </g>
+                        <!-- Shelf Row B -->
+                        <g opacity="0.7">
+                            <polygon points="180,230 380,230 370,200 195,200" fill="none" stroke="#10b981" stroke-width="1.5"/>
+                            <line x1="195" y1="200" x2="195" y2="182" stroke="#10b981" stroke-width="1"/>
+                            <line x1="370" y1="200" x2="370" y2="182" stroke="#10b981" stroke-width="1"/>
+                            <polygon points="195,182 370,182 362,162 208,162" fill="rgba(16,185,129,0.08)" stroke="#10b981" stroke-width="1"/>
+                            <text x="270" y="220" fill="#10b981" font-size="10" font-family="JetBrains Mono" text-anchor="middle">ROW B</text>
+                            <circle cx="230" cy="175" r="4" fill="#22c55e" opacity="0.6"/><circle cx="250" cy="174" r="5" fill="#ef4444" opacity="0.8"/><circle cx="270" cy="175" r="4" fill="#22c55e" opacity="0.6"/><circle cx="290" cy="173" r="5" fill="#16a34a" opacity="0.7"/><circle cx="310" cy="175" r="4" fill="#22c55e" opacity="0.6"/><circle cx="330" cy="174" r="4" fill="#16a34a" opacity="0.6"/>
+                        </g>
+                        <!-- Shelf Row C -->
+                        <g opacity="0.5">
+                            <polygon points="430,260 620,260 610,225 442,225" fill="none" stroke="#8b5cf6" stroke-width="1.5"/>
+                            <line x1="442" y1="225" x2="442" y2="208" stroke="#8b5cf6" stroke-width="1"/>
+                            <line x1="610" y1="225" x2="610" y2="208" stroke="#8b5cf6" stroke-width="1"/>
+                            <polygon points="442,208 610,208 602,190 452,190" fill="rgba(139,92,246,0.08)" stroke="#8b5cf6" stroke-width="1"/>
+                            <text x="520" y="250" fill="#8b5cf6" font-size="10" font-family="JetBrains Mono" text-anchor="middle">ROW C</text>
+                            <circle cx="480" cy="202" r="4" fill="#a78bfa" opacity="0.5"/><circle cx="500" cy="201" r="4" fill="#a78bfa" opacity="0.5"/><circle cx="520" cy="202" r="4" fill="#a78bfa" opacity="0.5"/><circle cx="540" cy="200" r="4" fill="#a78bfa" opacity="0.5"/><circle cx="560" cy="202" r="4" fill="#a78bfa" opacity="0.5"/><circle cx="580" cy="201" r="4" fill="#a78bfa" opacity="0.5"/>
+                        </g>
+                        <!-- Nana-1 robot position (3D) -->
+                        <g>
+                            <ellipse cx="300" cy="310" rx="18" ry="8" fill="rgba(59,130,246,0.2)"><animate attributeName="rx" values="18;24;18" dur="2s" repeatCount="indefinite"/></ellipse>
+                            <!-- Wheels -->
+                            <ellipse cx="288" cy="305" rx="10" ry="7" fill="#c47a28" stroke="#a06020" stroke-width="1"/>
+                            <ellipse cx="312" cy="305" rx="10" ry="7" fill="#c47a28" stroke="#a06020" stroke-width="1"/>
+                            <!-- Body -->
+                            <rect x="282" y="290" width="36" height="14" rx="4" fill="#d08830" stroke="#b07020" stroke-width="1"/>
+                            <!-- Neck -->
+                            <rect x="295" y="275" width="10" height="18" rx="2" fill="#8899aa"/>
+                            <!-- Head -->
+                            <circle cx="300" cy="262" r="18" fill="#5b8fd4" stroke="#4a7ec3" stroke-width="1.5"/>
+                            <circle cx="300" cy="262" r="10" fill="#1a2332"/>
+                            <circle cx="300" cy="262" r="5" fill="#ff9900" opacity="0.9"><animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite"/></circle>
+                            <!-- Navigation cone -->
+                            <polygon points="300,252 240,200 360,200" fill="rgba(0,212,255,0.06)" stroke="rgba(0,212,255,0.2)" stroke-width="0.5" stroke-dasharray="4 3"/>
+                            <!-- Label -->
+                            <text x="300" y="335" fill="var(--neon-blue)" font-size="9" font-family="JetBrains Mono" text-anchor="middle">NANA-1</text>
+                        </g>
+                        <!-- Docking ramp -->
+                        <g opacity="0.6">
+                            <polygon points="620,330 700,330 690,300 635,300" fill="rgba(0,212,255,0.1)" stroke="var(--neon-blue)" stroke-width="1"/>
+                            <text x="660" y="320" fill="var(--neon-blue)" font-size="8" font-family="JetBrains Mono" text-anchor="middle">RAMP</text>
+                        </g>
+                        <!-- Charging -->
+                        <rect x="710" y="310" width="25" height="18" rx="3" fill="rgba(245,158,11,0.15)" stroke="#f59e0b" stroke-width="1" opacity="0.6"/>
+                        <text x="722" y="322" fill="#f59e0b" font-size="7" font-family="JetBrains Mono" text-anchor="middle">CHG</text>
+                        <!-- Alert marker -->
+                        <g>
+                            <circle cx="250" cy="174" r="10" fill="none" stroke="#ef4444" stroke-width="1" opacity="0.8"><animate attributeName="r" values="10;16;10" dur="1.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.8;0;0.8" dur="1.5s" repeatCount="indefinite"/></circle>
+                            <text x="250" y="168" fill="#ef4444" font-size="8" font-family="JetBrains Mono" text-anchor="middle">!</text>
+                        </g>
+                        <!-- Stats overlay -->
+                        <text x="20" y="25" fill="var(--neon-blue)" font-size="10" font-family="JetBrains Mono" opacity="0.6">3D POINT CLOUD // 1.2M POINTS</text>
+                        <text x="20" y="40" fill="var(--text-muted)" font-size="9" font-family="JetBrains Mono" opacity="0.5">LIDAR REFRESH: 10Hz | ACCURACY: ±2mm</text>
+                        <text x="630" y="25" fill="#ef4444" font-size="9" font-family="JetBrains Mono" opacity="0.7">1 ANOMALY DETECTED</text>
+                    </svg>
+                </div>
+
+                <!-- ========== VIEW: DEPTH ========== -->
+                <div class="view-layer" id="viewDepth" style="position:absolute;inset:0;display:none;overflow:hidden;">
+                    <svg width="100%" height="100%" viewBox="0 0 800 380" preserveAspectRatio="xMidYMid slice">
+                        <defs>
+                            <linearGradient id="depthBg" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#000000"/><stop offset="100%" stop-color="#0a0a1a"/>
+                            </linearGradient>
+                            <linearGradient id="depthScale" x1="0" y1="1" x2="0" y2="0">
+                                <stop offset="0%" stop-color="#ff0044"/><stop offset="30%" stop-color="#ff6600"/><stop offset="50%" stop-color="#ffcc00"/><stop offset="70%" stop-color="#00ccff"/><stop offset="100%" stop-color="#0033aa"/>
+                            </linearGradient>
+                            <!-- Depth gradient for objects -->
+                            <radialGradient id="depthRobotHead" cx="50%" cy="40%" r="35%">
+                                <stop offset="0%" stop-color="#ff2244"/><stop offset="40%" stop-color="#ff6644"/><stop offset="70%" stop-color="#cc4422"/><stop offset="100%" stop-color="#661122"/>
+                            </radialGradient>
+                            <radialGradient id="depthRobotBody" cx="50%" cy="55%" r="25%">
+                                <stop offset="0%" stop-color="#ff4400"/><stop offset="60%" stop-color="#cc3300"/><stop offset="100%" stop-color="#882200"/>
+                            </radialGradient>
+                        </defs>
+                        <rect width="800" height="380" fill="url(#depthBg)"/>
+                        <!-- Far background (blue = far) -->
+                        <rect x="0" y="0" width="800" height="130" fill="#0a1133" opacity="0.8"/>
+                        <!-- Shelves (medium distance = cyan/green) -->
+                        <rect x="50" y="30" width="700" height="30" rx="3" fill="#005566" opacity="0.5"/>
+                        <rect x="80" y="35" width="100" height="20" rx="2" fill="#007788" opacity="0.6"/>
+                        <rect x="220" y="35" width="100" height="20" rx="2" fill="#008899" opacity="0.6"/>
+                        <rect x="380" y="35" width="100" height="20" rx="2" fill="#007788" opacity="0.6"/>
+                        <rect x="540" y="35" width="100" height="20" rx="2" fill="#008899" opacity="0.6"/>
+                        <rect x="50" y="75" width="700" height="28" rx="3" fill="#006677" opacity="0.4"/>
+                        <!-- Mid-ground -->
+                        <rect x="0" y="130" width="800" height="100" fill="#112233" opacity="0.3"/>
+                        <!-- Floor plane (close = red/orange) -->
+                        <rect x="0" y="280" width="800" height="100" fill="#331100" opacity="0.4"/>
+                        <!-- Robot depth silhouette (closest = bright red) -->
+                        <!-- Head -->
+                        <circle cx="400" cy="140" r="48" fill="url(#depthRobotHead)"/>
+                        <circle cx="400" cy="140" r="26" fill="#ff3355" opacity="0.8"/>
+                        <circle cx="400" cy="140" r="12" fill="#ff6677" opacity="0.9"/>
+                        <!-- Neck -->
+                        <rect x="388" y="185" width="24" height="40" rx="3" fill="#dd3311" opacity="0.7"/>
+                        <!-- Chassis -->
+                        <rect x="358" y="220" width="84" height="30" rx="8" fill="url(#depthRobotBody)"/>
+                        <!-- Wheels -->
+                        <ellipse cx="370" cy="270" rx="24" ry="18" fill="#cc4400" opacity="0.7"/>
+                        <ellipse cx="430" cy="270" rx="24" ry="18" fill="#cc4400" opacity="0.7"/>
+                        <!-- Arms -->
+                        <line x1="355" y1="150" x2="290" y2="200" stroke="#ee5500" stroke-width="10" stroke-linecap="round" opacity="0.6"/>
+                        <circle cx="285" cy="205" r="8" fill="#dd4400" opacity="0.6"/>
+                        <line x1="445" y1="150" x2="510" y2="200" stroke="#ee5500" stroke-width="10" stroke-linecap="round" opacity="0.6"/>
+                        <circle cx="515" cy="205" r="8" fill="#dd4400" opacity="0.6"/>
+                        <!-- Depth contour lines -->
+                        <circle cx="400" cy="200" r="60" fill="none" stroke="#ffcc00" stroke-width="0.5" opacity="0.2"/>
+                        <circle cx="400" cy="200" r="100" fill="none" stroke="#00ccff" stroke-width="0.5" opacity="0.15"/>
+                        <circle cx="400" cy="200" r="150" fill="none" stroke="#0066cc" stroke-width="0.5" opacity="0.1"/>
+                        <circle cx="400" cy="200" r="200" fill="none" stroke="#003388" stroke-width="0.5" opacity="0.08"/>
+                        <!-- Distance labels -->
+                        <text x="400" y="145" fill="#ffffff" font-size="12" font-family="JetBrains Mono" text-anchor="middle" opacity="0.9">0.8m</text>
+                        <text x="400" y="240" fill="#ffcc00" font-size="10" font-family="JetBrains Mono" text-anchor="middle" opacity="0.7">1.0m</text>
+                        <text x="290" y="220" fill="#ff8800" font-size="9" font-family="JetBrains Mono" text-anchor="middle" opacity="0.6">1.2m</text>
+                        <text x="510" y="220" fill="#ff8800" font-size="9" font-family="JetBrains Mono" text-anchor="middle" opacity="0.6">1.2m</text>
+                        <text x="200" y="50" fill="#00aacc" font-size="9" font-family="JetBrains Mono" opacity="0.5">3.5m</text>
+                        <text x="600" y="50" fill="#00aacc" font-size="9" font-family="JetBrains Mono" opacity="0.5">3.8m</text>
+                        <!-- Depth scale -->
+                        <rect x="755" y="40" width="16" height="200" rx="3" fill="url(#depthScale)"/>
+                        <text x="763" y="35" fill="#ff0044" font-size="8" font-family="JetBrains Mono" text-anchor="middle">NEAR</text>
+                        <text x="763" y="255" fill="#0033aa" font-size="8" font-family="JetBrains Mono" text-anchor="middle">FAR</text>
+                        <!-- Depth scan pulse -->
+                        <line x1="0" y1="0" x2="800" y2="0" stroke="#00ffaa" stroke-width="2" opacity="0.4"><animate attributeName="y1" values="0;380;0" dur="3s" repeatCount="indefinite"/><animate attributeName="y2" values="0;380;0" dur="3s" repeatCount="indefinite"/></line>
+                        <!-- Stats -->
+                        <text x="20" y="25" fill="#00ffaa" font-size="10" font-family="JetBrains Mono" opacity="0.6">DEPTH SENSOR // ToF + STEREO</text>
+                        <text x="20" y="40" fill="var(--text-muted)" font-size="9" font-family="JetBrains Mono" opacity="0.5">RANGE: 0.3m - 8.0m | FPS: 30 | RES: 640x480</text>
+                    </svg>
+                </div>
+
+                <!-- HUD Overlay (shared across all views) -->
+                <div class="hud-overlay">
+                    <div class="hud-corner hud-tl">
+                        <span class="hud-line" id="hudViewLabel">NANA-1 // LIVE FEED</span>
+                        <span class="hud-line">RES: 1920x1080 @ 30fps</span>
+                        <span class="hud-line hud-highlight">STATUS: ACTIVE</span>
+                    </div>
+                    <div class="hud-corner hud-tr">
+                        <span class="hud-line">LAT: 31.7683° N</span>
+                        <span class="hud-line">LON: 35.2137° E</span>
+                        <span class="hud-line">ZONE: GH-04</span>
+                    </div>
+                    <div class="hud-corner hud-bl">
+                        <span class="hud-line" id="hudMode">MODE: POLLINATION</span>
+                        <span class="hud-line">ARM EXT: 45cm</span>
+                        <span class="hud-line hud-warning" id="hudBattery">BAT: 34%</span>
+                    </div>
+                    <div class="hud-corner hud-br">
+                        <span class="hud-line" id="hudTime">--:--:--</span>
+                        <span class="hud-line">PLANTS PROCESSED: <span class="hud-highlight" id="plantsCount">847</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="viewport-footer">
+                <span style="display:flex; align-items:center; gap:6px;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);"></span>
+                    Streaming Active | 24ms latency
+                </span>
+                <span style="display:flex; align-items:center; gap:6px;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-red); animation: blink 1s ease-in-out infinite;"></span>
+                    REC
+                </span>
+            </div>
+        </div>
+
+        <!-- Enhanced Task Queue -->
+        <div class="task-queue" id="taskQueueWidget">
+            <div class="task-queue-header">
+                <div class="task-queue-title">
+                    Autonomous Task Queue
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="task-count" id="taskTotal">5 tasks</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);" id="tqEta">~39 min total</span>
+                </div>
+            </div>
+
+            <!-- Stats bar -->
+            <div class="tq-stats-bar">
+                <div class="tq-stat">
+                    <div class="tq-stat-value" style="color:var(--accent-green);" id="tqCompleted">12</div>
+                    <div class="tq-stat-label">Completed</div>
+                </div>
+                <div class="tq-stat">
+                    <div class="tq-stat-value" style="color:var(--neon-blue);">1</div>
+                    <div class="tq-stat-label">Active</div>
+                </div>
+                <div class="tq-stat">
+                    <div class="tq-stat-value" style="color:var(--accent-orange);">4</div>
+                    <div class="tq-stat-label">Queued</div>
+                </div>
+                <div class="tq-stat">
+                    <div class="tq-stat-value" style="color:var(--text-secondary);">94%</div>
+                    <div class="tq-stat-label">Success Rate</div>
+                </div>
+            </div>
+
+            <!-- Overall pipeline progress -->
+            <div class="tq-progress-overview">
+                <span class="tq-progress-label">Pipeline</span>
+                <div class="tq-progress-track">
+                    <div class="tq-progress-segment" style="width:13%;background:var(--accent-green);" title="Complete"></div>
+                    <div class="tq-progress-segment" style="width:9%;background:var(--accent-cyan);" title="Active"></div>
+                    <div class="tq-progress-segment" style="width:20%;background:rgba(59,130,246,0.4);" title="Queued"></div>
+                    <div class="tq-progress-segment" style="width:58%;background:rgba(100,116,139,0.15);" title="Remaining"></div>
+                </div>
+                <span class="tq-progress-label" id="tqPipelinePct">22%</span>
+            </div>
+
+            <!-- Filters -->
+            <div class="tq-filters">
+                <button class="tq-filter-btn active" data-filter="all">All (5)</button>
+                <button class="tq-filter-btn" data-filter="active">Active</button>
+                <button class="tq-filter-btn" data-filter="queued">Queued</button>
+                <button class="tq-filter-btn" data-filter="pending">Pending</button>
+            </div>
+
+            <!-- Task list -->
+            <div id="taskList">
+
+                <!-- TASK 1: Active -->
+                <div class="tq-item tq-active" data-status="active">
+                    <div class="tq-item-accent" style="background:var(--accent-green);"></div>
+                    <div class="tq-item-body">
+                        <div class="tq-item-row1">
+                            <div class="tq-item-left">
+                                <div class="tq-item-icon" style="background:rgba(139,92,246,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
+                                <div class="tq-item-info">
+                                    <div class="tq-item-name">Strawberry Pollination - Shelf A3</div>
+                                    <div class="tq-item-detail">
+                                        <span>28 plants</span>
+                                        <span>High priority</span>
+                                        <span>Zone A</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tq-item-right">
+                                <div class="tq-item-actions">
+                                    <button class="tq-action-btn" title="Pause">&#x23f8;</button>
+                                    <button class="tq-action-btn" title="Skip">&#x23ed;</button>
+                                </div>
+                                <div class="tq-ring">
+                                    <svg width="36" height="36" viewBox="0 0 36 36">
+                                        <circle cx="18" cy="18" r="15" fill="none" stroke="var(--border)" stroke-width="3"/>
+                                        <circle cx="18" cy="18" r="15" fill="none" stroke="var(--accent-green)" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="31" stroke-linecap="round" id="tqRing1"/>
+                                    </svg>
+                                    <div class="tq-ring-text" style="color:var(--accent-green);" id="tqRingPct1">67%</div>
+                                </div>
+                                <span class="tq-badge tq-badge-active">Active</span>
+                            </div>
+                        </div>
+                        <!-- Sub-steps: Approach → Scan → Pollinate → Verify -->
+                        <div class="tq-item-progress">
+                            <div class="tq-substeps" style="flex:1;">
+                                <div class="tq-substep done" title="Approach"></div>
+                                <div class="tq-substep done" title="Scan flowers"></div>
+                                <div class="tq-substep current" title="Pollinate"></div>
+                                <div class="tq-substep" title="Verify"></div>
+                            </div>
+                            <span class="tq-item-eta" id="tqEta1">ETA 4m 12s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TASK 2: Queued -->
+                <div class="tq-item" data-status="queued">
+                    <div class="tq-item-accent" style="background:var(--accent-blue);"></div>
+                    <div class="tq-item-body">
+                        <div class="tq-item-row1">
+                            <div class="tq-item-left">
+                                <div class="tq-item-icon" style="background:rgba(6,182,212,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+                                <div class="tq-item-info">
+                                    <div class="tq-item-name">Health Scan - Row B2</div>
+                                    <div class="tq-item-detail">
+                                        <span>Deep scan</span>
+                                        <span>~8 min</span>
+                                        <span>Zone B</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tq-item-right">
+                                <div class="tq-item-actions">
+                                    <button class="tq-action-btn" title="Move up">&#x2191;</button>
+                                    <button class="tq-action-btn" title="Remove">&#x2715;</button>
+                                </div>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);">#2</span>
+                                <span class="tq-badge tq-badge-queued">Queued</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TASK 3: Pending -->
+                <div class="tq-item" data-status="pending">
+                    <div class="tq-item-accent" style="background:var(--accent-orange);"></div>
+                    <div class="tq-item-body">
+                        <div class="tq-item-row1">
+                            <div class="tq-item-left">
+                                <div class="tq-item-icon" style="background:rgba(245,158,11,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+                                <div class="tq-item-info">
+                                    <div class="tq-item-name">Navigate to Charging Station</div>
+                                    <div class="tq-item-detail">
+                                        <span>Auto-charge</span>
+                                        <span>~3 min</span>
+                                        <span>Dock A3</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tq-item-right">
+                                <div class="tq-item-actions">
+                                    <button class="tq-action-btn" title="Move up">&#x2191;</button>
+                                    <button class="tq-action-btn" title="Remove">&#x2715;</button>
+                                </div>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);">#3</span>
+                                <span class="tq-badge tq-badge-pending">Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TASK 4: Pending -->
+                <div class="tq-item" data-status="pending">
+                    <div class="tq-item-accent" style="background:var(--accent-purple);"></div>
+                    <div class="tq-item-body">
+                        <div class="tq-item-row1">
+                            <div class="tq-item-left">
+                                <div class="tq-item-icon" style="background:rgba(139,92,246,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg></div>
+                                <div class="tq-item-info">
+                                    <div class="tq-item-name">3D Mapping - Zone C</div>
+                                    <div class="tq-item-detail">
+                                        <span>Full LIDAR</span>
+                                        <span>~15 min</span>
+                                        <span>Zone C</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tq-item-right">
+                                <div class="tq-item-actions">
+                                    <button class="tq-action-btn" title="Move up">&#x2191;</button>
+                                    <button class="tq-action-btn" title="Remove">&#x2715;</button>
+                                </div>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);">#4</span>
+                                <span class="tq-badge tq-badge-pending">Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TASK 5: Pending -->
+                <div class="tq-item" data-status="pending">
+                    <div class="tq-item-accent" style="background:var(--text-muted);"></div>
+                    <div class="tq-item-body">
+                        <div class="tq-item-row1">
+                            <div class="tq-item-left">
+                                <div class="tq-item-icon" style="background:rgba(100,116,139,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+                                <div class="tq-item-info">
+                                    <div class="tq-item-name">Daily Report - Control Center</div>
+                                    <div class="tq-item-detail">
+                                        <span>Analytics upload</span>
+                                        <span>~1 min</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tq-item-right">
+                                <div class="tq-item-actions">
+                                    <button class="tq-action-btn" title="Move up">&#x2191;</button>
+                                    <button class="tq-action-btn" title="Remove">&#x2715;</button>
+                                </div>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);">#5</span>
+                                <span class="tq-badge tq-badge-pending">Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Greenhouse Map -->
+        <div class="map-container">
+            <div class="map-header">
+                <div class="task-queue-title">Greenhouse Map - Overhead View</div>
+                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">ZONE GH-04</span>
+            </div>
+            <div class="map-body">
+                <svg width="100%" height="100%" viewBox="0 0 600 200">
+                    <!-- Background -->
+                    <rect x="10" y="10" width="580" height="180" rx="4" fill="none" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 4"/>
+
+                    <!-- Shelving rows -->
+                    <g opacity="0.5">
+                        <rect x="40" y="30" width="520" height="20" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.3)" stroke-width="1"/>
+                        <text x="50" y="44" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">A1-A6</text>
+
+                        <rect x="40" y="65" width="520" height="20" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.3)" stroke-width="1"/>
+                        <text x="50" y="79" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">B1-B6</text>
+
+                        <rect x="40" y="100" width="520" height="20" rx="3" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.3)" stroke-width="1"/>
+                        <text x="50" y="114" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">C1-C6</text>
+
+                        <rect x="40" y="135" width="520" height="20" rx="3" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.3)" stroke-width="1"/>
+                        <text x="50" y="149" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">D1-D6</text>
+                    </g>
+
+                    <!-- Charging station -->
+                    <rect x="540" y="165" width="30" height="20" rx="3" fill="rgba(245,158,11,0.2)" stroke="var(--accent-orange)" stroke-width="1"/>
+                    <text x="542" y="178" fill="var(--accent-orange)" font-size="8" font-family="JetBrains Mono">CHG</text>
+
+                    <!-- Docking Ramp -->
+                    <polygon points="480,168 530,168 530,185 470,185" fill="rgba(0,212,255,0.1)" stroke="var(--neon-blue)" stroke-width="1"/>
+                    <text x="482" y="180" fill="var(--neon-blue)" font-size="7" font-family="JetBrains Mono">RAMP</text>
+
+                    <!-- Navigation path -->
+                    <path d="M 200,110 L 200,55 L 350,55 L 350,110" fill="none" stroke="var(--accent-cyan)" stroke-width="1.5" class="map-path" opacity="0.5"/>
+
+                    <!-- Robot position -->
+                    <g class="map-robot-dot">
+                        <circle cx="200" cy="110" r="8" fill="rgba(59,130,246,0.3)" stroke="var(--accent-blue)" stroke-width="2">
+                            <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="200" cy="110" r="4" fill="var(--accent-blue)"/>
+                    </g>
+
+                    <!-- Completed areas -->
+                    <rect x="40" y="30" width="260" height="20" rx="3" fill="rgba(16,185,129,0.1)" stroke="none"/>
+                    <text x="280" y="44" fill="var(--accent-green)" font-size="8" font-family="JetBrains Mono">DONE</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Automation Schedule -->
+        <div class="task-queue" style="padding: 16px;">
+            <div class="task-queue-title" style="margin-bottom: 12px;">Autonomous Schedule - 24 Hours</div>
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; margin-bottom:6px;">
+                <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:59</span>
+            </div>
+            <div class="schedule-timeline" id="scheduleTimeline"></div>
+            <div class="schedule-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:rgba(139,92,246,0.6);"></div> Pollination</div>
+                <div class="legend-item"><div class="legend-dot" style="background:rgba(6,182,212,0.6);"></div> Scanning</div>
+                <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,0.6);"></div> Charging</div>
+                <div class="legend-item"><div class="legend-dot" style="background:rgba(100,116,139,0.3);"></div> Idle</div>
+                <div class="legend-item"><div class="legend-dot" style="background:rgba(16,185,129,0.6);"></div> Active</div>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="activity-log" style="margin-top: 16px;">
+            <div class="task-queue-header">
+                <div class="task-queue-title">Activity Log</div>
+                <span style="font-size:11px;color:var(--text-muted);cursor:pointer;">Clear All</span>
+            </div>
+            <div id="activityLog">
+                <div class="log-entry">
+                    <div class="log-dot" style="background: var(--accent-green);"></div>
+                    <div class="log-text"><strong>Pollination Complete</strong> - Row A3, 14 plants</div>
+                    <div class="log-time">10:42</div>
+                </div>
+                <div class="log-entry">
+                    <div class="log-dot" style="background: var(--accent-blue);"></div>
+                    <div class="log-text"><strong>Navigation</strong> - Moving to Row A4</div>
+                    <div class="log-time">10:41</div>
+                </div>
+                <div class="log-entry">
+                    <div class="log-dot" style="background: var(--accent-cyan);"></div>
+                    <div class="log-text"><strong>AI Scan</strong> - Leaf disease detected in plant #B2-07</div>
+                    <div class="log-time">10:38</div>
+                </div>
+                <div class="log-entry">
+                    <div class="log-dot" style="background: var(--accent-purple);"></div>
+                    <div class="log-text"><strong>Omniverse Sync</strong> - Digital Twin updated</div>
+                    <div class="log-time">10:35</div>
+                </div>
+                <div class="log-entry">
+                    <div class="log-dot" style="background: var(--accent-orange);"></div>
+                    <div class="log-text"><strong>Magnetic Ramp</strong> - Successful docking at station A3</div>
+                    <div class="log-time">10:30</div>
+                </div>
+                <div class="log-entry">
+                    <div class="log-dot" style="background: var(--accent-green);"></div>
+                    <div class="log-text"><strong>Extended Mode</strong> - Chassis raised by 25cm</div>
+                    <div class="log-time">10:29</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== RIGHT PANEL ===== -->
+    <div class="panel-right">
+
+        <div class="section-label">Structural State</div>
+
+        <!-- Robot State Visualization -->
+        <div class="robot-viz">
+            <div class="robot-svg-container">
+                <svg width="160" height="190" viewBox="0 0 160 190" id="robotStateViz">
+                    <!-- Height indicator -->
+                    <line x1="15" y1="15" x2="15" y2="175" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 3"/>
+                    <text x="10" y="12" fill="var(--text-muted)" font-size="8" font-family="JetBrains Mono" text-anchor="middle">↕</text>
+
+                    <!-- Robot mini viz -->
+                    <g id="miniRobot" transform="translate(80,95)">
+                        <!-- Wheels -->
+                        <ellipse cx="-25" cy="55" rx="14" ry="11" fill="#c47a28" stroke="#a06020" stroke-width="1.5"/>
+                        <ellipse cx="25" cy="55" rx="14" ry="11" fill="#c47a28" stroke="#a06020" stroke-width="1.5"/>
+                        <!-- Chassis -->
+                        <rect x="-30" y="35" width="60" height="18" rx="6" fill="#d08830" stroke="#b07020" stroke-width="1.5"/>
+                        <!-- Neck -->
+                        <rect x="-8" y="5" width="16" height="32" rx="3" fill="#8899aa" stroke="#778899" stroke-width="1" id="miniNeck"/>
+                        <!-- Head -->
+                        <g id="miniHead">
+                            <circle cx="0" cy="-20" r="28" fill="#5b8fd4" stroke="#4a7ec3" stroke-width="1.5"/>
+                            <circle cx="0" cy="-20" r="16" fill="#1a2332"/>
+                            <circle cx="0" cy="-20" r="8" fill="#ff9900" opacity="0.8">
+                                <animate attributeName="opacity" values="0.8;0.5;0.8" dur="2s" repeatCount="indefinite"/>
+                            </circle>
+                        </g>
+                        <!-- Arms -->
+                        <line x1="-28" y1="-10" x2="-48" y2="15" stroke="#5b8fd4" stroke-width="5" stroke-linecap="round"/>
+                        <line x1="28" y1="-10" x2="48" y2="15" stroke="#5b8fd4" stroke-width="5" stroke-linecap="round"/>
+                    </g>
+
+                    <!-- Dimension labels -->
+                    <text x="145" y="95" fill="var(--neon-blue)" font-size="9" font-family="JetBrains Mono" text-anchor="end" id="heightLabel">120cm</text>
+                </svg>
+            </div>
+            <div class="robot-state-label" id="stateLabel">BASE STATE // 120cm</div>
+        </div>
+
+        <!-- State Buttons -->
+        <div class="state-grid">
+            <button class="state-btn active" data-state="base" onclick="setRobotState('base')">BASE</button>
+            <button class="state-btn" data-state="extended" onclick="setRobotState('extended')">EXTEND</button>
+            <button class="state-btn" data-state="retracted" onclick="setRobotState('retracted')">RETRACT</button>
+        </div>
+
+        <div class="section-label">Operational Mode</div>
+
+        <!-- Operation Modes -->
+        <div class="mode-card active" onclick="setMode(this, 'pollination')">
+            <div class="mode-icon" style="background:rgba(139,92,246,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
+            <div class="mode-info">
+                <div class="mode-name">Pollination</div>
+                <div class="mode-desc">Pollination Mode</div>
+            </div>
+            <div class="mode-status" style="background: var(--accent-green);"></div>
+        </div>
+
+        <div class="mode-card" onclick="setMode(this, 'scanning')">
+            <div class="mode-icon" style="background:rgba(6,182,212,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+            <div class="mode-info">
+                <div class="mode-name">Scan & Diagnose</div>
+                <div class="mode-desc">Health Scan Mode</div>
+            </div>
+            <div class="mode-status" style="background: var(--text-muted);"></div>
+        </div>
+
+        <div class="mode-card" onclick="setMode(this, 'navigation')">
+            <div class="mode-icon" style="background:rgba(59,130,246,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
+            <div class="mode-info">
+                <div class="mode-name">Navigation</div>
+                <div class="mode-desc">Navigation Mode</div>
+            </div>
+            <div class="mode-status" style="background: var(--text-muted);"></div>
+        </div>
+
+        <div class="mode-card" onclick="setMode(this, 'mapping')">
+            <div class="mode-icon" style="background:rgba(245,158,11,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg></div>
+            <div class="mode-info">
+                <div class="mode-name">3D Mapping</div>
+                <div class="mode-desc">3D Mapping Mode</div>
+            </div>
+            <div class="mode-status" style="background: var(--text-muted);"></div>
+        </div>
+
+        <div class="mode-card" onclick="setMode(this, 'idle')">
+            <div class="mode-icon" style="background:rgba(100,116,139,0.15);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/></svg></div>
+            <div class="mode-info">
+                <div class="mode-name">Standby</div>
+                <div class="mode-desc">Idle / Standby</div>
+            </div>
+            <div class="mode-status" style="background: var(--text-muted);"></div>
+        </div>
+
+        <div class="section-label" style="margin-top:20px;">Systems</div>
+
+        <!-- System Stats -->
+        <div class="system-stats">
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--accent-orange);" id="batteryValue">34%</div>
+                <div class="stat-label">Battery</div>
+                <div class="stat-bar"><div class="stat-bar-fill" style="width:34%;background:var(--accent-orange);" id="batteryBar"></div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--accent-cyan);" id="cpuValue">42%</div>
+                <div class="stat-label">AI Processing</div>
+                <div class="stat-bar"><div class="stat-bar-fill" style="width:42%;background:var(--accent-cyan);" id="cpuBar"></div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--accent-green);" id="motorValue">28°C</div>
+                <div class="stat-label">Motor</div>
+                <div class="stat-bar"><div class="stat-bar-fill" style="width:35%;background:var(--accent-green);" id="motorBar"></div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--accent-blue);" id="wifiValue">-42dB</div>
+                <div class="stat-label">WiFi</div>
+                <div class="stat-bar"><div class="stat-bar-fill" style="width:82%;background:var(--accent-blue);" id="wifiBar"></div></div>
+            </div>
+        </div>
+
+        <div class="section-label" style="margin-top:20px;">Quick Actions</div>
+
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="quickAction('home')">
+                <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+                Return to Base
+            </button>
+            <button class="quick-btn" onclick="quickAction('calibrate')">
+                <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>
+                Calibrate Sensors
+            </button>
+            <button class="quick-btn" onclick="quickAction('report')">
+                <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+                Instant Report
+            </button>
+            <button class="quick-btn danger" onclick="quickAction('stop')">
+                <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><rect x="8" y="8" width="8" height="8" rx="1" fill="currentColor"/></svg></span>
+                Emergency Stop
+            </button>
+        </div>
+
+        <button class="emergency-btn" onclick="emergencyStop()">
+            &#x26a0; EMERGENCY STOP &#x26a0;
+        </button>
+    </div>
+
+</div>
+
+<script>
+    // ===== CLOCK =====
+    function updateClock() {
+        const now = new Date();
+        const time = now.toLocaleTimeString('en-US', { hour12: false });
+        document.getElementById('navTime').textContent = time;
+        document.getElementById('hudTime').textContent = time;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ===== ROBOT STATE =====
+    let currentState = 'base';
+    function setRobotState(state) {
+        currentState = state;
+        document.querySelectorAll('.state-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.state === state);
+        });
+
+        const label = document.getElementById('stateLabel');
+        const heightLabel = document.getElementById('heightLabel');
+        const miniNeck = document.getElementById('miniNeck');
+        const miniHead = document.getElementById('miniHead');
+        const miniRobot = document.getElementById('miniRobot');
+
+        switch(state) {
+            case 'base':
+                label.textContent = 'BASE STATE // 120cm';
+                heightLabel.textContent = '120cm';
+                miniNeck.setAttribute('height', '32');
+                miniNeck.setAttribute('y', '5');
+                miniHead.setAttribute('transform', 'translate(0,0)');
+                miniRobot.setAttribute('transform', 'translate(80,95)');
+                break;
+            case 'extended':
+                label.textContent = 'EXTENDED STATE // 145cm';
+                heightLabel.textContent = '145cm';
+                miniNeck.setAttribute('height', '50');
+                miniNeck.setAttribute('y', '-12');
+                miniHead.setAttribute('transform', 'translate(0,-18)');
+                miniRobot.setAttribute('transform', 'translate(80,105)');
+                break;
+            case 'retracted':
+                label.textContent = 'RETRACTED STATE // 85cm';
+                heightLabel.textContent = '85cm';
+                miniNeck.setAttribute('height', '15');
+                miniNeck.setAttribute('y', '22');
+                miniHead.setAttribute('transform', 'translate(0,15)');
+                miniRobot.setAttribute('transform', 'translate(80,85)');
+                break;
+        }
+
+        addLogEntry('system', `Structural state changed to ${state.toUpperCase()}`);
+    }
+
+    // ===== OPERATION MODE =====
+    let currentMode = 'pollination';
+    function setMode(el, mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-card').forEach(card => {
+            card.classList.remove('active');
+            card.querySelector('.mode-status').style.background = 'var(--text-muted)';
+        });
+        el.classList.add('active');
+        el.querySelector('.mode-status').style.background = 'var(--accent-green)';
+
+        const modeNames = {
+            pollination: 'POLLINATION',
+            scanning: 'HEALTH SCAN',
+            navigation: 'NAVIGATION',
+            mapping: '3D MAPPING',
+            idle: 'STANDBY'
+        };
+        document.getElementById('hudMode').textContent = `MODE: ${modeNames[mode]}`;
+        addLogEntry('mode', `Operational mode: ${modeNames[mode]}`);
+    }
+
+    // ===== VIEWPORT TABS =====
+    const viewMap = {
+        camera: { id: 'viewCamera', label: 'NANA-1 // LIVE FEED' },
+        thermal: { id: 'viewThermal', label: 'NANA-1 // THERMAL IMAGING' },
+        map3d: { id: 'viewMap3d', label: 'NANA-1 // 3D POINT CLOUD' },
+        depth: { id: 'viewDepth', label: 'NANA-1 // DEPTH SENSOR' }
+    };
+    document.querySelectorAll('.viewport-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.viewport-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const view = tab.dataset.view;
+            // Hide all views
+            document.querySelectorAll('.view-layer').forEach(v => v.style.display = 'none');
+            // Show selected
+            const target = viewMap[view];
+            if (target) {
+                document.getElementById(target.id).style.display = view === 'camera' ? 'flex' : 'block';
+                document.getElementById('hudViewLabel').textContent = target.label;
+            }
+            addLogEntry('system', `Viewport switched to ${view.toUpperCase()}`);
+        });
+    });
+
+    // ===== TASK QUEUE FILTERS =====
+    document.querySelectorAll('.tq-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tq-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const filter = btn.dataset.filter;
+            document.querySelectorAll('.tq-item').forEach(item => {
+                if (filter === 'all' || item.dataset.status === filter) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // ===== MINI CHARTS =====
+    function createChart(containerId, color, data) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        data.forEach(val => {
+            const bar = document.createElement('div');
+            bar.className = 'chart-bar';
+            bar.style.height = val + '%';
+            bar.style.background = color;
+            container.appendChild(bar);
+        });
+    }
+
+    function generateData(base, variance, count) {
+        return Array.from({ length: count }, () =>
+            Math.max(10, Math.min(100, base + (Math.random() - 0.5) * variance))
+        );
+    }
+
+    createChart('tempChart', 'var(--accent-orange)', generateData(65, 30, 24));
+    createChart('humidChart', 'var(--accent-cyan)', generateData(70, 25, 24));
+    createChart('lightChart', 'var(--accent-orange)', generateData(50, 40, 24));
+
+    // ===== SCHEDULE =====
+    function buildSchedule() {
+        const timeline = document.getElementById('scheduleTimeline');
+        const schedule = [
+            'idle','idle','idle','idle','idle','idle', // 00-05
+            'charge','charge', // 06-07
+            'scan','scan','pollinate','pollinate','pollinate','pollinate', // 08-13
+            'scan','active','active','pollinate','pollinate', // 14-18
+            'scan','active', // 19-20
+            'charge', // 21
+            'idle','idle','idle' // 22-24
+        ];
+
+        schedule.forEach((type, i) => {
+            const block = document.createElement('div');
+            block.className = `schedule-block ${type}`;
+            block.title = `${String(i).padStart(2,'0')}:00 - ${type}`;
+            timeline.appendChild(block);
+        });
+    }
+    buildSchedule();
+
+    // ===== LIVE DATA SIMULATION =====
+    function simulateLiveData() {
+        // Battery drain
+        const battery = document.getElementById('batteryValue');
+        const batteryBar = document.getElementById('batteryBar');
+        let batVal = parseInt(battery.textContent);
+        batVal = Math.max(15, batVal + (Math.random() > 0.7 ? -1 : 0));
+        battery.textContent = batVal + '%';
+        batteryBar.style.width = batVal + '%';
+        batteryBar.style.background = batVal < 25 ? 'var(--accent-red)' : 'var(--accent-orange)';
+        document.getElementById('hudBattery').textContent = `BAT: ${batVal}%`;
+
+        // CPU fluctuation
+        const cpu = document.getElementById('cpuValue');
+        const cpuBar = document.getElementById('cpuBar');
+        const cpuVal = Math.round(35 + Math.random() * 30);
+        cpu.textContent = cpuVal + '%';
+        cpuBar.style.width = cpuVal + '%';
+
+        // Motor temp
+        const motor = document.getElementById('motorValue');
+        const motorBar = document.getElementById('motorBar');
+        const motorVal = Math.round(25 + Math.random() * 10);
+        motor.textContent = motorVal + '°C';
+        motorBar.style.width = (motorVal / 80 * 100) + '%';
+
+        // WiFi
+        const wifi = document.getElementById('wifiValue');
+        const wifiVal = Math.round(-35 - Math.random() * 15);
+        wifi.textContent = wifiVal + 'dB';
+
+        // Plants count
+        const plants = document.getElementById('plantsCount');
+        let pCount = parseInt(plants.textContent);
+        if (Math.random() > 0.6) pCount++;
+        plants.textContent = pCount;
+
+        // Active task ring progress
+        const ring = document.getElementById('tqRing1');
+        const ringPct = document.getElementById('tqRingPct1');
+        const etaEl = document.getElementById('tqEta1');
+        if (ring && ringPct) {
+            let pct = parseInt(ringPct.textContent);
+            if (pct < 100) {
+                pct = Math.min(100, pct + Math.round(Math.random() * 2));
+                const circumference = 94.2;
+                ring.setAttribute('stroke-dashoffset', circumference - (circumference * pct / 100));
+                ringPct.textContent = pct + '%';
+                // Update ETA
+                const remaining = Math.max(0, Math.round((100 - pct) * 0.6 * 12 / 100));
+                const etaM = Math.floor(remaining / 60);
+                const etaS = remaining % 60;
+                if (etaEl) etaEl.textContent = `ETA ${etaM > 0 ? etaM + 'm ' : ''}${etaS}s`;
+                // Update substeps
+                if (pct > 85) {
+                    document.querySelectorAll('.tq-substep')[2].classList.remove('current');
+                    document.querySelectorAll('.tq-substep')[2].classList.add('done');
+                    document.querySelectorAll('.tq-substep')[3].classList.add('current');
+                }
+            }
+        }
+        // Completed counter
+        const completedEl = document.getElementById('tqCompleted');
+        if (completedEl && Math.random() > 0.92) {
+            completedEl.textContent = parseInt(completedEl.textContent) + 1;
+        }
+    }
+
+    setInterval(simulateLiveData, 3000);
+
+    // ===== ACTIVITY LOG =====
+    function addLogEntry(type, text) {
+        const log = document.getElementById('activityLog');
+        const now = new Date();
+        const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+        const colors = {
+            system: 'var(--accent-blue)',
+            mode: 'var(--accent-purple)',
+            task: 'var(--accent-green)',
+            alert: 'var(--accent-orange)',
+            error: 'var(--accent-red)'
+        };
+
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `
+            <div class="log-dot" style="background: ${colors[type] || 'var(--accent-blue)'};"></div>
+            <div class="log-text"><strong>${text}</strong></div>
+            <div class="log-time">${time}</div>
+        `;
+
+        log.insertBefore(entry, log.firstChild);
+
+        // Keep only last 20 entries
+        while (log.children.length > 20) {
+            log.removeChild(log.lastChild);
+        }
+    }
+
+    // ===== QUICK ACTIONS =====
+    function quickAction(action) {
+        const actions = {
+            home: 'Return to base command sent',
+            calibrate: 'Sensor calibration started',
+            report: 'Instant report sent to control center',
+            stop: 'Emergency stop activated!'
+        };
+        addLogEntry(action === 'stop' ? 'error' : 'task', actions[action]);
+    }
+
+    function emergencyStop() {
+        addLogEntry('error', 'EMERGENCY STOP - All systems halted');
+        document.querySelector('.status-chip').style.background = 'rgba(239,68,68,0.1)';
+        document.querySelector('.status-chip').style.borderColor = 'rgba(239,68,68,0.3)';
+        document.querySelector('.status-chip').style.color = 'var(--accent-red)';
+        document.querySelector('.status-chip').innerHTML = '<div class="status-dot" style="background:var(--accent-red);"></div> E-STOP';
+    }
+
+    // ===== AUTO EVENTS =====
+    const autoEvents = [
+        { type: 'task', text: 'Auto-pollination - Plant #A4-12' },
+        { type: 'system', text: 'Omniverse Digital Twin - Synced' },
+        { type: 'task', text: 'Health scan - Plant #B2-03' },
+        { type: 'system', text: 'Humidity sensor - Reading: 67.4%' },
+        { type: 'task', text: 'Auto-navigation - Moving between rows' },
+        { type: 'alert', text: 'Yellow leaf detected - Plant C1-08' },
+        { type: 'system', text: 'LIDAR scan - Map updated' },
+        { type: 'task', text: 'Micro-spray - Plant A3-15' },
+    ];
+
+    setInterval(() => {
+        const event = autoEvents[Math.floor(Math.random() * autoEvents.length)];
+        addLogEntry(event.type, event.text);
+    }, 8000);
+
+    // ===== UPTIME =====
+    let uptimeMinutes = 763;
+    setInterval(() => {
+        uptimeMinutes++;
+        const h = Math.floor(uptimeMinutes / 60);
+        const m = uptimeMinutes % 60;
+        document.getElementById('uptime').textContent = `${h}h ${String(m).padStart(2,'0')}m`;
+    }, 60000);
+
+    // ===== NAV BUTTON ACTIONS =====
+    (() => {
+        const btnSettings = document.getElementById('btnSettings');
+        const btnNotif = document.getElementById('btnNotifications');
+        const btnFS = document.getElementById('btnFullScreen');
+        const settingsDD = document.getElementById('settingsDropdown');
+        const notifDD = document.getElementById('notifDropdown');
+        const notifBadge = document.getElementById('notifBadge');
+
+        function closeAll() {
+            settingsDD.classList.remove('open');
+            notifDD.classList.remove('open');
+            btnSettings.classList.remove('active');
+            btnNotif.classList.remove('active');
+        }
+
+        btnSettings.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = settingsDD.classList.contains('open');
+            closeAll();
+            if (!isOpen) {
+                settingsDD.classList.add('open');
+                btnSettings.classList.add('active');
+            }
+        });
+
+        btnNotif.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = notifDD.classList.contains('open');
+            closeAll();
+            if (!isOpen) {
+                notifDD.classList.add('open');
+                btnNotif.classList.add('active');
+            }
+        });
+
+        // Mark all read
+        document.getElementById('markAllRead').addEventListener('click', () => {
+            notifBadge.style.display = 'none';
+            document.querySelectorAll('.notif-dot').forEach(d => d.style.opacity = '0.3');
+        });
+
+        // Full screen toggle
+        btnFS.addEventListener('click', () => {
+            closeAll();
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+                btnFS.classList.add('active');
+            } else {
+                document.exitFullscreen();
+                btnFS.classList.remove('active');
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) btnFS.classList.remove('active');
+        });
+
+        // Toggle switches
+        document.querySelectorAll('.toggle').forEach(t => {
+            t.addEventListener('click', () => t.classList.toggle('on'));
+        });
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', () => closeAll());
+        settingsDD.addEventListener('click', e => e.stopPropagation());
+        notifDD.addEventListener('click', e => e.stopPropagation());
+    })();
+</script>
+
+</body>
+</html>
