@@ -1864,29 +1864,45 @@
         }
         .pg-status::before { content: '>'; margin-right: 8px; opacity: 0.4; }
 
-        /* --- Plant cards overlay --- */
+        /* --- Plant cards overlay (positioned over each plant) --- */
         .pg-plant-cards {
             position: absolute;
-            top: 8px;
-            left: 8px;
-            display: flex;
-            gap: 4px;
+            inset: 0;
             z-index: 10;
             pointer-events: none;
         }
         .pg-plant-card {
-            width: 40px;
-            padding: 4px;
-            background: rgba(0,0,0,0.65);
-            backdrop-filter: blur(6px);
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            position: absolute;
+            width: 46px;
+            padding: 5px 4px;
+            background: rgba(6,10,22,0.78);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
             text-align: center;
-            transition: all 0.4s ease;
+            transition: all 0.4s ease, transform 0.3s ease;
             pointer-events: auto;
             cursor: default;
+            transform: translateX(-50%);
         }
-        .pg-plant-card.active { border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(0,212,255,0.2); }
+        .pg-plant-card::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid rgba(255,255,255,0.08);
+        }
+        .pg-plant-card.active {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 12px rgba(0,212,255,0.25), 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .pg-plant-card.active::after {
+            border-top-color: var(--neon-blue);
+        }
         .pg-plant-card.dead { border-color: var(--accent-red); opacity: 0.5; }
         .pg-plant-card-id {
             font-family: 'JetBrains Mono', monospace;
@@ -2427,7 +2443,8 @@
             .pg-controls-bar { grid-template-columns: 1fr; }
             .pg-ctrl-panel { border-right: none; border-bottom: 1px solid var(--border); }
             .pg-hud { flex-direction: column; align-items: flex-start; }
-            .pg-plant-cards { position: relative; top: auto; left: auto; padding: 8px; overflow-x: auto; }
+            .pg-plant-card { width: 36px; padding: 3px; font-size: 5px; }
+            .pg-plant-card-emoji { font-size: 11px; }
             .pg-inst-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -4229,13 +4246,18 @@
             plantsContainer.appendChild(group);
         }
 
-        // --- Build plant cards (HTML overlay) ---
+        // --- Build plant cards (HTML overlay, positioned above each plant) ---
         function buildPlantCards() {
             plantCardsEl.innerHTML = '';
             S.plants.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'pg-plant-card';
                 card.id = 'pgCard' + p.i;
+                // Position above the plant: x as % of 800 SVG width, y above SHELF_Y
+                const leftPct = (p.x / 800) * 100;
+                const topPct = ((SHELF_Y - 105) / 400) * 100;
+                card.style.left = leftPct + '%';
+                card.style.top = topPct + '%';
                 card.innerHTML = `
                     <div class="pg-plant-card-id">P${p.i+1}</div>
                     <div class="pg-plant-card-emoji">${STAGE_EMOJI[STAGES[p.stage]]}</div>
